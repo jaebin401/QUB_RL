@@ -261,15 +261,9 @@ class QUBFreeEnv(LeggedRobot):
         self.obs_buf = obs_buf_all.reshape(self.num_envs, -1)  # N, T*K
         self.privileged_obs_buf = torch.cat([self.critic_history[i] for i in range(self.cfg.env.c_frame_stack)], dim=1)
 
-        # NaN 디버깅
-        if torch.isnan(self.obs_buf).any() or torch.isinf(self.obs_buf).any():
-            print("[WARNING] obs_buf contains NaN or Inf!")
-            print("  obs_buf nan:", torch.isnan(self.obs_buf).sum().item())
-            print("  obs_buf inf:", torch.isinf(self.obs_buf).sum().item())
-            print("  dof_pos nan:", torch.isnan(self.dof_pos).sum().item())
-            print("  dof_vel nan:", torch.isnan(self.dof_vel).sum().item())
-            print("  base_ang_vel nan:", torch.isnan(self.base_ang_vel).sum().item())
-            print("  base_euler_xyz nan:", torch.isnan(self.base_euler_xyz).sum().item())
+        # NaN/Inf 클리핑
+        self.obs_buf = torch.nan_to_num(self.obs_buf, nan=0.0, posinf=1.0, neginf=-1.0)
+        self.privileged_obs_buf = torch.nan_to_num(self.privileged_obs_buf, nan=0.0, posinf=1.0, neginf=-1.0)
 
     def reset_idx(self, env_ids):
         super().reset_idx(env_ids)

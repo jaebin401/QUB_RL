@@ -44,7 +44,7 @@ class QUBCfg(LeggedRobotCfg):
         single_num_privileged_obs = 77
         num_privileged_obs = int(c_frame_stack * single_num_privileged_obs)
         num_actions = 13
-        num_envs = 4096
+        num_envs = 1024  # reduced from 4096 for 8GB GPU
         episode_length_s = 24     # episode length in seconds
         use_ref_actions = False   # speed up training by using reference actions
 
