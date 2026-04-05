@@ -110,7 +110,7 @@ class ActorCritic(nn.Module):
 
     def update_distribution(self, observations):
         mean = self.actor(observations)
-        self.distribution = Normal(mean, mean*0. + self.std)
+        self.distribution = Normal(mean, mean*0. + self.std.abs())
 
     def act(self, observations, **kwargs):
         self.update_distribution(observations)
