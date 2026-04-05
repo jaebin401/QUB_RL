@@ -137,6 +137,10 @@ class OnPolicyRunner:
                         rewards.to(self.device),
                         dones.to(self.device),
                     )
+                    # NaN/Inf 클리핑 - 발산한 환경의 obs가 storage에 저장되지 않도록
+                    obs = torch.nan_to_num(obs, nan=0.0, posinf=1.0, neginf=-1.0)
+                    critic_obs = torch.nan_to_num(critic_obs, nan=0.0, posinf=1.0, neginf=-1.0)
+                    rewards = torch.nan_to_num(rewards, nan=0.0, posinf=1.0, neginf=-1.0)
                     self.alg.process_env_step(rewards, dones, infos)
 
                     if self.log_dir is not None:
