@@ -31,7 +31,7 @@
 from humanoid.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
 
 
-class QUBLCfg(LeggedRobotCfg):
+class QUBCfg(LeggedRobotCfg):
     """
     Configuration class for the XBotL humanoid robot.
     """
@@ -228,7 +228,7 @@ class QUBLCfg(LeggedRobotCfg):
         clip_actions = 18.
 
 
-class XBotLCfgPPO(LeggedRobotCfgPPO):
+class QUBCfgPPO(LeggedRobotCfgPPO):
     seed = 5
     runner_class_name = 'OnPolicyRunner'   # DWLOnPolicyRunner
 
