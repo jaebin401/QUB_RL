@@ -118,10 +118,10 @@ class QUBCfg(LeggedRobotCfg):
 
     class control(LeggedRobotCfg.control):
         # PD Drive parameters:
-        stiffness = {'hip_pitch': 200.0, 'hip_roll': 200.0, 'hip_yaw': 200.0,
-                     'knee': 350.0, 'ankle_pitch': 15.0, 'ankle_roll': 15.0, 'torso': 200.0}
-        damping = {'hip_pitch': 10.0, 'hip_roll': 10.0, 'hip_yaw': 10.0,
-                   'knee': 10.0, 'ankle_pitch': 10.0, 'ankle_roll': 10.0, 'torso': 10.0}
+        stiffness = {'hip_pitch': 80.0, 'hip_roll': 80.0, 'hip_yaw': 80.0,
+                     'knee': 80.0, 'ankle_pitch': 10.0, 'ankle_roll': 10.0, 'torso': 80.0}
+        damping = {'hip_pitch': 2.0, 'hip_roll': 2.0, 'hip_yaw': 2.0,
+                   'knee': 2.0, 'ankle_pitch': 0.5, 'ankle_roll': 0.5, 'torso': 2.0}
 
         # action scale: target angle = actionScale * action + defaultAngle
         action_scale = 0.25
