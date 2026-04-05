@@ -110,6 +110,7 @@ class ActorCritic(nn.Module):
 
     def update_distribution(self, observations):
         mean = self.actor(observations)
+        mean = torch.nan_to_num(mean, nan=0.0, posinf=1.0, neginf=-1.0)
         self.distribution = Normal(mean, mean*0. + self.std.abs())
 
     def act(self, observations, **kwargs):
