@@ -31,7 +31,7 @@
 from humanoid.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
 
 
-class XBotLCfg(LeggedRobotCfg):
+class QUBLCfg(LeggedRobotCfg):
     """
     Configuration class for the XBotL humanoid robot.
     """
@@ -43,7 +43,7 @@ class XBotLCfg(LeggedRobotCfg):
         num_observations = int(frame_stack * num_single_obs)
         single_num_privileged_obs = 73
         num_privileged_obs = int(c_frame_stack * single_num_privileged_obs)
-        num_actions = 12
+        num_actions = 13
         num_envs = 4096
         episode_length_s = 24     # episode length in seconds
         use_ref_actions = False   # speed up training by using reference actions
