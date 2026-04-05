@@ -93,8 +93,10 @@ class OnPolicyRunner:
     def learn(self, num_learning_iterations, init_at_random_ep_len=False):
         # initialize writer
         if self.log_dir is not None and self.writer is None:
+            import os
+            os.environ["WANDB_MODE"] = "offline"
             wandb.init(
-                project="XBot",
+                project="QUB",
                 sync_tensorboard=True,
                 name=self.wandb_run_name,
                 config=self.all_cfg,
