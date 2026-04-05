@@ -102,17 +102,17 @@ class QUBCfg(LeggedRobotCfg):
 
         default_joint_angles = {  # = target angles [rad] when action = 0.0
                 'torso_yaw_joint':     0.,
-                'R_hip_pitch_joint':   0.,
+                'R_hip_pitch_joint':   0.1,
                 'R_hip_roll_joint':    0.,
                 'R_hip_yaw_joint':     0.,
-                'R_knee_pitch_joint':  0.,
-                'R_ankle_pitch_joint': 0.,
+                'R_knee_pitch_joint':  -0.3,
+                'R_ankle_pitch_joint': 0.2,
                 'R_ankle_roll_joint':  0.,
-                'L_hip_pitch_joint':   0.,
+                'L_hip_pitch_joint':   0.1,
                 'L_hip_roll_joint':    0.,
                 'L_hip_yaw_joint':     0.,
-                'L_knee_pitch_joint':  0.,
-                'L_ankle_pitch_joint': 0.,
+                'L_knee_pitch_joint':  -0.3,
+                'L_ankle_pitch_joint': 0.2,
                 'L_ankle_roll_joint':  0.,
         }
 
@@ -130,7 +130,7 @@ class QUBCfg(LeggedRobotCfg):
 
     class sim(LeggedRobotCfg.sim):
         dt = 0.001  # 1000 Hz
-        substeps = 1
+        substeps = 2  # increased for stability
         up_axis = 1  # 0 is y, 1 is z
 
         class physx(LeggedRobotCfg.sim.physx):
