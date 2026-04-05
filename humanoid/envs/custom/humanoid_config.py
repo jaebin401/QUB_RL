@@ -72,6 +72,8 @@ class QUBCfg(LeggedRobotCfg):
         max_angular_velocity = 10.0
         max_linear_velocity = 10.0
         armature = 0.01
+        disable_gravity = False
+        collapse_fixed_joints = False  # keep all links separate
 
     class terrain(LeggedRobotCfg.terrain):
         mesh_type = 'plane'

@@ -406,11 +406,10 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="0.02 0 -0.02"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="../meshes/R_foot_link.STL" />
+        <box size="0.12 0.06 0.04"/>
       </geometry>
     </collision>
   </link>
@@ -736,11 +735,10 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="0.02 0 -0.02"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="../meshes/L_foot_link.STL" />
+        <box size="0.12 0.06 0.04"/>
       </geometry>
     </collision>
   </link>
