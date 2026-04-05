@@ -67,6 +67,11 @@ class QUBCfg(LeggedRobotCfg):
         flip_visual_attachments = False
         replace_cylinder_with_capsule = False
         fix_base_link = False
+        angular_damping = 0.1
+        linear_damping = 0.1
+        max_angular_velocity = 10.0
+        max_linear_velocity = 10.0
+        armature = 0.01
 
     class terrain(LeggedRobotCfg.terrain):
         mesh_type = 'plane'
