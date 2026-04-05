@@ -39,7 +39,7 @@ from humanoid.envs import LeggedRobot
 from humanoid.utils.terrain import  HumanoidTerrain
 
 
-class XBotLFreeEnv(LeggedRobot):
+class QUBFreeEnv(LeggedRobot):
     '''
     XBotLFreeEnv is a class that represents a custom environment for a legged robot.
 
@@ -129,13 +129,13 @@ class XBotLFreeEnv(LeggedRobot):
         # left foot stance phase set to default joint pos
         sin_pos_l[sin_pos_l > 0] = 0
         self.ref_dof_pos[:, 2] = sin_pos_l * scale_1
-        self.ref_dof_pos[:, 3] = sin_pos_l * scale_2
-        self.ref_dof_pos[:, 4] = sin_pos_l * scale_1
+        self.ref_dof_pos[:, 5] = sin_pos_l * scale_2
+        self.ref_dof_pos[:, 0] = sin_pos_l * scale_1
         # right foot stance phase set to default joint pos
         sin_pos_r[sin_pos_r < 0] = 0
         self.ref_dof_pos[:, 8] = sin_pos_r * scale_1
-        self.ref_dof_pos[:, 9] = sin_pos_r * scale_2
-        self.ref_dof_pos[:, 10] = sin_pos_r * scale_1
+        self.ref_dof_pos[:, 11] = sin_pos_r * scale_2
+        self.ref_dof_pos[:, 6] = sin_pos_r * scale_1
         # Double support phase
         self.ref_dof_pos[torch.abs(sin_pos) < 0.1] = 0
 
@@ -365,8 +365,8 @@ class XBotLFreeEnv(LeggedRobot):
         on penalizing deviation in yaw and roll directions. Excludes yaw and roll from the main penalty.
         """
         joint_diff = self.dof_pos - self.default_joint_pd_target
-        left_yaw_roll = joint_diff[:, :2]
-        right_yaw_roll = joint_diff[:, 6: 8]
+        left_yaw_roll = joint_diff[:, 3:5]
+        right_yaw_roll = joint_diff[:, 9:11]
         yaw_roll = torch.norm(left_yaw_roll, dim=1) + torch.norm(right_yaw_roll, dim=1)
         yaw_roll = torch.clamp(yaw_roll - 0.1, 0, 50)
         return torch.exp(-yaw_roll * 100) - 0.01 * torch.norm(joint_diff, dim=1)
