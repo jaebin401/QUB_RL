@@ -57,9 +57,9 @@ class QUBLCfg(LeggedRobotCfg):
     class asset(LeggedRobotCfg.asset):
         file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/XBot/urdf/XBot-L.urdf'
 
-        name = "XBot-L"
-        foot_name = "ankle_roll"
-        knee_name = "knee"
+        name = "QUB"
+        foot_name = "foot_link"
+        knee_name = "calf_link"
 
         terminate_after_contacts_on = ['base_link']
         penalize_contacts_on = ["base_link"]
@@ -98,21 +98,22 @@ class QUBLCfg(LeggedRobotCfg):
             height_measurements = 0.1
 
     class init_state(LeggedRobotCfg.init_state):
-        pos = [0.0, 0.0, 0.95]
+        pos = [0.0, 0.0, 1.01]
 
         default_joint_angles = {  # = target angles [rad] when action = 0.0
-            'left_leg_roll_joint': 0.,
-            'left_leg_yaw_joint': 0.,
-            'left_leg_pitch_joint': 0.,
-            'left_knee_joint': 0.,
-            'left_ankle_pitch_joint': 0.,
-            'left_ankle_roll_joint': 0.,
-            'right_leg_roll_joint': 0.,
-            'right_leg_yaw_joint': 0.,
-            'right_leg_pitch_joint': 0.,
-            'right_knee_joint': 0.,
-            'right_ankle_pitch_joint': 0.,
-            'right_ankle_roll_joint': 0.,
+                'torso_yaw_joint':     0.,
+                'R_hip_pitch_joint':   0.,
+                'R_hip_roll_joint':    0.,
+                'R_hip_yaw_joint':     0.,
+                'R_knee_pitch_joint':  0.,
+                'R_ankle_pitch_joint': 0.,
+                'R_ankle_roll_joint':  0.,
+                'L_hip_pitch_joint':   0.,
+                'L_hip_roll_joint':    0.,
+                'L_hip_yaw_joint':     0.,
+                'L_knee_pitch_joint':  0.,
+                'L_ankle_pitch_joint': 0.,
+                'L_ankle_roll_joint':  0.,
         }
 
     class control(LeggedRobotCfg.control):
