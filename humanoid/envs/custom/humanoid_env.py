@@ -178,11 +178,11 @@ class QUBFreeEnv(LeggedRobot):
         self.add_noise = self.cfg.noise.add_noise
         noise_scales = self.cfg.noise.noise_scales
         noise_vec[0: 5] = 0.  # commands
-        noise_vec[5: 17] = noise_scales.dof_pos * self.obs_scales.dof_pos
-        noise_vec[17: 29] = noise_scales.dof_vel * self.obs_scales.dof_vel
-        noise_vec[29: 41] = 0.  # previous actions
-        noise_vec[41: 44] = noise_scales.ang_vel * self.obs_scales.ang_vel   # ang vel
-        noise_vec[44: 47] = noise_scales.quat * self.obs_scales.quat         # euler x,y
+        noise_vec[5: 18] = noise_scales.dof_pos * self.obs_scales.dof_pos
+        noise_vec[18: 31] = noise_scales.dof_vel * self.obs_scales.dof_vel
+        noise_vec[31: 44] = 0.  # previous actions
+        noise_vec[41: 47] = noise_scales.ang_vel * self.obs_scales.ang_vel   # ang vel
+        noise_vec[47: 50] = noise_scales.quat * self.obs_scales.quat         # euler x,y
         return noise_vec
 
 
