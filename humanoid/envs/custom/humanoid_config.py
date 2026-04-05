@@ -55,7 +55,7 @@ class QUBCfg(LeggedRobotCfg):
         torque_limit = 0.85
 
     class asset(LeggedRobotCfg.asset):
-        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/XBot/urdf/XBot-L.urdf'
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/QUB/urdf/QUB.urdf'
 
         name = "QUB"
         foot_name = "foot_link"
@@ -98,7 +98,7 @@ class QUBCfg(LeggedRobotCfg):
             height_measurements = 0.1
 
     class init_state(LeggedRobotCfg.init_state):
-        pos = [0.0, 0.0, 1.01]
+        pos = [0.0, 0.0, 0.88]
 
         default_joint_angles = {  # = target angles [rad] when action = 0.0
                 'torso_yaw_joint':     0.,
@@ -173,7 +173,7 @@ class QUBCfg(LeggedRobotCfg):
             heading = [-3.14, 3.14]
 
     class rewards:
-        base_height_target = 0.89
+        base_height_target = 0.85
         min_dist = 0.2
         max_dist = 0.5
         # put some settings here for LLM parameter tuning
@@ -253,7 +253,7 @@ class QUBCfgPPO(LeggedRobotCfgPPO):
 
         # logging
         save_interval = 100  # Please check for potential savings every `save_interval` iterations.
-        experiment_name = 'XBot_ppo'
+        experiment_name = 'QUB_ppo'
         run_name = ''
         # Load and resume
         resume = False
