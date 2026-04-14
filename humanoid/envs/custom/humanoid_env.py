@@ -237,14 +237,20 @@ class QUBFreeEnv(LeggedRobot):
         diff = self.dof_pos - self.ref_dof_pos
 
         # torso_yaw 보정된 pelvis 기준 선속도
+        pelvis_lin_vel = self._get_pelvis_lin_vel()  # (num_envs, 2)
+        pelvis_lin_vel_3d = torch.cat([
+            pelvis_lin_vel,
+            self.base_lin_vel[:, 2:3]  # z축은 보정 불필요
+        ], dim=1)
+
         self.privileged_obs_buf = torch.cat((
             self.command_input,  # 2 + 3
             (self.dof_pos - self.default_joint_pd_target) * \
-            self.obs_scales.dof_pos,  # 12
-            self.dof_vel * self.obs_scales.dof_vel,  # 12
-            self.actions,  # 12
-            diff,  # 12
-            self.base_lin_vel * self.obs_scales.lin_vel,  # 3
+            self.obs_scales.dof_pos,  # 13
+            self.dof_vel * self.obs_scales.dof_vel,  # 13
+            self.actions,  # 13
+            diff,  # 13
+            pelvis_lin_vel_3d * self.obs_scales.lin_vel,  # 3 (보정된 선속도)
             self.base_ang_vel * self.obs_scales.ang_vel,  # 3
             self.base_euler_xyz * self.obs_scales.quat,  # 3
             self.rand_push_force[:, :2],  # 2
@@ -434,13 +440,16 @@ class QUBFreeEnv(LeggedRobot):
         """
         Calculates a reward for accurately tracking both linear and angular velocity commands.
         Penalizes deviations from specified linear and angular velocity targets.
+        Linear velocity is evaluated in pelvis frame (torso_yaw corrected).
         """
-        # Tracking of linear velocity commands (xy axes)
+        pelvis_lin_vel = self._get_pelvis_lin_vel()  # (num_envs, 2)
+
+        # Tracking of linear velocity commands (xy axes, pelvis frame)
         lin_vel_error = torch.norm(
-            self.commands[:, :2] - self.base_lin_vel[:, :2], dim=1)
+            self.commands[:, :2] - pelvis_lin_vel, dim=1)
         lin_vel_error_exp = torch.exp(-lin_vel_error * 10)
 
-        # Tracking of angular velocity commands (yaw)
+        # Tracking of angular velocity commands (yaw) - base_link 기준 유지
         ang_vel_error = torch.abs(
             self.commands[:, 2] - self.base_ang_vel[:, 2])
         ang_vel_error_exp = torch.exp(-ang_vel_error * 10)
@@ -451,11 +460,12 @@ class QUBFreeEnv(LeggedRobot):
 
     def _reward_tracking_lin_vel(self):
         """
-        Tracks linear velocity commands along the xy axes. 
-        Calculates a reward based on how closely the robot's linear velocity matches the commanded values.
+        Tracks linear velocity commands along the xy axes.
+        Evaluated in pelvis frame (torso_yaw corrected from base_link).
         """
+        pelvis_lin_vel = self._get_pelvis_lin_vel()  # (num_envs, 2)
         lin_vel_error = torch.sum(torch.square(
-            self.commands[:, :2] - self.base_lin_vel[:, :2]), dim=1)
+            self.commands[:, :2] - pelvis_lin_vel), dim=1)
         return torch.exp(-lin_vel_error * self.cfg.rewards.tracking_sigma)
 
     def _reward_tracking_ang_vel(self):
@@ -493,12 +503,12 @@ class QUBFreeEnv(LeggedRobot):
 
     def _reward_low_speed(self):
         """
-        Rewards or penalizes the robot based on its speed relative to the commanded speed. 
-        This function checks if the robot is moving too slow, too fast, or at the desired speed, 
-        and if the movement direction matches the command.
+        Rewards or penalizes the robot based on its speed relative to the commanded speed.
+        Evaluated in pelvis frame (torso_yaw corrected from base_link).
         """
-        # Calculate the absolute value of speed and command for comparison
-        absolute_speed = torch.abs(self.base_lin_vel[:, 0])
+        pelvis_lin_vel = self._get_pelvis_lin_vel()  # (num_envs, 2)
+
+        absolute_speed = torch.abs(pelvis_lin_vel[:, 0])
         absolute_command = torch.abs(self.commands[:, 0])
 
         # Define speed criteria for desired range
@@ -508,13 +518,9 @@ class QUBFreeEnv(LeggedRobot):
 
         # Check if the speed and command directions are mismatched
         sign_mismatch = torch.sign(
-            self.base_lin_vel[:, 0]) != torch.sign(self.commands[:, 0])
+            pelvis_lin_vel[:, 0]) != torch.sign(self.commands[:, 0])
 
-        # Initialize reward tensor
-        reward = torch.zeros_like(self.base_lin_vel[:, 0])
-
-        # Assign rewards based on conditions
-        # Speed too low
+        reward = torch.zeros_like(pelvis_lin_vel[:, 0])
         reward[speed_too_low] = -1.0
         # Speed too high
         reward[speed_too_high] = 0.
