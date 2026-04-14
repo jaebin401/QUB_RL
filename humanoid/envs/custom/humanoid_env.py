@@ -97,7 +97,27 @@ class QUBFreeEnv(LeggedRobot):
         self.gym.set_actor_root_state_tensor(
             self.sim, gymtorch.unwrap_tensor(self.root_states))
 
-    def  _get_phase(self):
+    def _get_pelvis_lin_vel(self):
+        """
+        base_link 기준 선속도를 torso_yaw_joint 각도로 보정하여
+        pelvis_link 기준 선속도를 반환.
+        sim-to-real: base_link IMU + torso_yaw 엔코더로 동일하게 계산 가능.
+        torso_yaw_joint = dof index 12 (알파벳 순)
+        """
+        torso_yaw = self.dof_pos[:, 12]  # (num_envs,)
+        cos_yaw = torch.cos(torso_yaw)
+        sin_yaw = torch.sin(torso_yaw)
+
+        vx = self.base_lin_vel[:, 0]
+        vy = self.base_lin_vel[:, 1]
+
+        # Z축 역회전: base_link -> pelvis_link 좌표계
+        pelvis_vx = cos_yaw * vx + sin_yaw * vy
+        pelvis_vy = -sin_yaw * vx + cos_yaw * vy
+
+        return torch.stack([pelvis_vx, pelvis_vy], dim=1)  # (num_envs, 2)
+
+    def _get_phase(self):
         cycle_time = self.cfg.rewards.cycle_time
         phase = self.episode_length_buf * self.dt / cycle_time
         return phase
