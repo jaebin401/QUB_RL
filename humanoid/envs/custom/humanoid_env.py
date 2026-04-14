@@ -236,6 +236,7 @@ class QUBFreeEnv(LeggedRobot):
         
         diff = self.dof_pos - self.ref_dof_pos
 
+        # torso_yaw 보정된 pelvis 기준 선속도
         self.privileged_obs_buf = torch.cat((
             self.command_input,  # 2 + 3
             (self.dof_pos - self.default_joint_pd_target) * \
