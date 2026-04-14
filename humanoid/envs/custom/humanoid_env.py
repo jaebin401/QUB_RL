@@ -511,22 +511,17 @@ class QUBFreeEnv(LeggedRobot):
         absolute_speed = torch.abs(pelvis_lin_vel[:, 0])
         absolute_command = torch.abs(self.commands[:, 0])
 
-        # Define speed criteria for desired range
         speed_too_low = absolute_speed < 0.5 * absolute_command
         speed_too_high = absolute_speed > 1.2 * absolute_command
         speed_desired = ~(speed_too_low | speed_too_high)
 
-        # Check if the speed and command directions are mismatched
         sign_mismatch = torch.sign(
             pelvis_lin_vel[:, 0]) != torch.sign(self.commands[:, 0])
 
         reward = torch.zeros_like(pelvis_lin_vel[:, 0])
         reward[speed_too_low] = -1.0
-        # Speed too high
         reward[speed_too_high] = 0.
-        # Speed within desired range
         reward[speed_desired] = 1.2
-        # Sign mismatch has the highest priority
         reward[sign_mismatch] = -2.0
         return reward * (self.commands[:, 0].abs() > 0.1)
     
