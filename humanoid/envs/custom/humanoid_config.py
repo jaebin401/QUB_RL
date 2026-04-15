@@ -174,8 +174,8 @@ class QUBCfg(LeggedRobotCfg):
         heading_command = True  # if true: compute ang vel command from heading error
 
         class ranges:
-            lin_vel_x = [-0.3, 0.6]   # min max [m/s]
-            lin_vel_y = [-0.3, 0.3]   # min max [m/s]
+            lin_vel_x = [0.3, 0.6]    # min max [m/s] - 항상 앞으로 (최솟값 양수)
+            lin_vel_y = [-0.15, 0.15] # min max [m/s] - 측면 범위 축소
             ang_vel_yaw = [-0.3, 0.3] # min max [rad/s]
             heading = [-3.14, 3.14]
 
@@ -188,7 +188,7 @@ class QUBCfg(LeggedRobotCfg):
         target_feet_height = 0.06        # m
         cycle_time = 0.64                # sec
         # if true negative total rewards are clipped at zero (avoids early termination problems)
-        only_positive_rewards = True
+        only_positive_rewards = False  # 음수 보상 허용 - 서있으면 속도 추종 실패가 페널티로 작용
         # tracking reward = exp(error*sigma)
         tracking_sigma = 5
         max_contact_force = 700  # Forces above this value are penalized
