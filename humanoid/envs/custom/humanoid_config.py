@@ -193,35 +193,60 @@ class QUBCfg(LeggedRobotCfg):
         tracking_sigma = 5
         max_contact_force = 700  # Forces above this value are penalized
 
+        # ===== Periodic Reward Composition (PRC) settings =====
+        # 논문: Siekmann et al., "Sim-to-Real Learning of All Common Bipedal
+        #       Gaits via Periodic Reward Composition" (2021)
+        prc_kappa = 16.0           # Von Mises 부드러움 (클수록 sharp transition)
+        prc_swing_ratio = 0.5      # cycle 중 swing이 차지하는 비율 (walking = 0.5)
+        prc_theta_left = 0.0       # 왼발 phase offset
+        prc_theta_right = 0.5      # 오른발 phase offset (walking: half cycle 어긋남)
+
         class scales:
-            # reference motion tracking
-            joint_pos = 1.6
-            feet_clearance = 1.
-            feet_contact_number = 1.2
-            # gait
-            feet_air_time = 1.
-            foot_slip = -0.05
-            feet_distance = 0.2
-            knee_distance = 0.2
-            # contact
-            feet_contact_forces = -0.01
-            # vel tracking
+            # ============================================================
+            # [PRC] Periodic Reward Composition — 신규 추가 (gait 보상)
+            # ============================================================
+            foot_force_swing = 1.0     # swing 중 발 힘 페널티 (내부 출력이 이미 음수)
+            foot_speed_stance = 1.0    # stance 중 발 속도 페널티
+
+            # ============================================================
+            # [ACTIVE] 유지: 명령 추종 / 안전 / 기본 smoothness
+            # ============================================================
             tracking_lin_vel = 1.2
             tracking_ang_vel = 1.1
-            vel_mismatch_exp = 0.5  # lin_z; ang x,y
-            low_speed = 0.2
-            track_vel_hard = 0.5
-            # base pos
-            default_joint_pos = 0.5
             orientation = 1.
-            base_height = 0.2
-            base_acc = 0.2
-            # energy
+            collision = -1.
+            feet_contact_forces = -0.01
             action_smoothness = -0.002
             torques = -1e-5
-            dof_vel = -5e-4
-            dof_acc = -1e-7
-            collision = -1.
+
+            # ============================================================
+            # [DISABLED — PRC 검증을 위해 비활성화]
+            # 아래 항목들은 PRC 효과를 격리해서 평가하기 위해 모두 주석 처리.
+            # 검증 후 필요한 것만 다시 살릴 예정.
+            # ============================================================
+
+            # --- (1) Reference-based gait 보상: PRC로 대체 ---
+            # joint_pos = 1.6              # 사인파 reference joint 추종 → PRC로 대체
+            # feet_clearance = 1.          # swing 중 발 높이 → PRC의 foot_force_swing이 대체
+            # feet_contact_number = 1.2    # contact mask 일치 → PRC가 phase별로 직접 강제
+            # feet_air_time = 1.           # 공중 시간 → PRC의 swing phase ratio로 제어
+            # foot_slip = -0.05            # stance 중 발 속도 → PRC의 foot_speed_stance와 중복
+
+            # --- (2) 중복 속도 추종 보상: tracking_lin/ang_vel로 충분 ---
+            # vel_mismatch_exp = 0.5       # lin_z, ang xy 작게 → orientation이 대신함
+            # low_speed = 0.2              # 명령 속도 대비 추종
+            # track_vel_hard = 0.5         # tracking 강화
+
+            # --- (3) 보조 자세 보상: 일단 모두 제외, 학습 후 필요 시 부활 ---
+            # default_joint_pos = 0.5      # yaw/roll 발산 방지
+            # base_height = 0.2            # 무릎 굽힘 자세 방지
+            # base_acc = 0.2               # base 가속도 작게
+            # feet_distance = 0.2          # 두 발 간격
+            # knee_distance = 0.2          # 두 무릎 간격
+
+            # --- (4) 추가 smoothness 페널티: NaN 원인 / 중복 ---
+            # dof_vel = -5e-4              # 관절속도 페널티 (action_smoothness와 중복)
+            # dof_acc = -1e-7              # 관절가속도 페널티 (NaN 원인이었음)
 
     class normalization:
         class obs_scales:

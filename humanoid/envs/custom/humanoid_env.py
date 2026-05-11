@@ -299,7 +299,132 @@ class QUBFreeEnv(LeggedRobot):
         for i in range(self.critic_history.maxlen):
             self.critic_history[i][env_ids] *= 0
 
-# ================================================ Rewards ================================================== #
+# ================================================================================== #
+# ==================== [PRC] Periodic Reward Composition =========================== #
+# ================================================================================== #
+# 논문: Siekmann et al., "Sim-to-Real Learning of All Common Bipedal Gaits via
+#       Periodic Reward Composition" (2021)
+#
+# 핵심 아이디어:
+#   - Reference trajectory 없이 phase별 force/speed 페널티만으로 gait emergence
+#   - swing phase: 발 힘 페널티  (foot이 공중에 있을 때 ground reaction force 작아야)
+#   - stance phase: 발 속도 페널티 (foot이 땅에 닿았을 때 slip 없어야)
+#   - Von Mises 기반 부드러운 indicator로 phase 경계를 smooth하게 처리
+#
+# 이 영역만 수정/추가하면 PRC 검증 가능. 검증 후 필요한 보조항을 골라서 부활시킬 것.
+# ================================================================================== #
+
+    def _smooth_indicator(self, phi, a, b, kappa):
+        """
+        Von Mises 근사 기반 부드러운 phase indicator: E[I(a < phi < b)].
+        sigmoid를 사용한 Von Mises CDF 근사.
+
+        Args:
+            phi: (num_envs,) — 정규화 phase ∈ [0, 1)
+            a, b: scalar — phase 시작/끝 시점 ∈ [0, 1]
+            kappa: 부드러움 (클수록 sharp)
+
+        Returns:
+            (num_envs,) ∈ [0, 1] — phase 안에 있을 기댓값
+        """
+        # 2π scaling으로 cycle 매핑
+        phi_2pi = 2 * torch.pi * phi
+        a_2pi = 2 * torch.pi * a
+        b_2pi = 2 * torch.pi * b
+
+        # P(a < phi): a를 지났는가
+        p_after_a = torch.sigmoid(kappa * torch.sin((phi_2pi - a_2pi) / 2))
+        # P(phi < b): b를 아직 안 지났는가
+        p_before_b = 1.0 - torch.sigmoid(kappa * torch.sin((phi_2pi - b_2pi) / 2))
+
+        return p_after_a * p_before_b
+
+    def _get_prc_coefficients(self):
+        """
+        각 발에 대한 C_frc, C_spd 기댓값 계산.
+
+        Walking (논문 Fig.4 기준):
+          - swing  phase: [0.0, r],     c_frc = -1, c_spd =  0
+          - stance phase: [r,   1.0],   c_frc =  0, c_spd = -1
+          - theta_left  = 0.0
+          - theta_right = 0.5  (반 cycle 어긋남)
+
+        Returns:
+            C_frc: (num_envs, 2) — [left, right], 각 ∈ [-1, 0]
+            C_spd: (num_envs, 2) — [left, right], 각 ∈ [-1, 0]
+        """
+        phase = self._get_phase() % 1.0  # (num_envs,) — cycle 정규화
+
+        r = self.cfg.rewards.prc_swing_ratio
+        kappa = self.cfg.rewards.prc_kappa
+        theta_L = self.cfg.rewards.prc_theta_left
+        theta_R = self.cfg.rewards.prc_theta_right
+
+        # 각 발의 phase (offset 적용)
+        phi_L = (phase + theta_L) % 1.0
+        phi_R = (phase + theta_R) % 1.0
+
+        # swing: [0, r], stance: [r, 1.0]
+        I_swing_L = self._smooth_indicator(phi_L, 0.0, r, kappa)
+        I_stance_L = self._smooth_indicator(phi_L, r, 1.0, kappa)
+        I_swing_R = self._smooth_indicator(phi_R, 0.0, r, kappa)
+        I_stance_R = self._smooth_indicator(phi_R, r, 1.0, kappa)
+
+        # C_frc: swing 중 -1, stance 중 0
+        C_frc_L = -1.0 * I_swing_L
+        C_frc_R = -1.0 * I_swing_R
+        # C_spd: swing 중 0, stance 중 -1
+        C_spd_L = -1.0 * I_stance_L
+        C_spd_R = -1.0 * I_stance_R
+
+        C_frc = torch.stack([C_frc_L, C_frc_R], dim=1)  # (num_envs, 2)
+        C_spd = torch.stack([C_spd_L, C_spd_R], dim=1)
+        return C_frc, C_spd
+
+    def _reward_foot_force_swing(self):
+        """
+        [PRC] Swing phase 중 발에 작용하는 ground reaction force에 페널티.
+
+        kernel: q_frc = 1 - exp(-||F||^2 / 100)   (논문 식, [0,1] bounded)
+        C_frc는 swing phase에서 -1 (with smoothing), stance에서 0이므로
+        총 보상은 swing 중에만 음수.
+
+        Returns:
+            (num_envs,) — 발마다의 (C_frc * q_frc) 합. swing 중 발에 힘이 있으면 음수.
+        """
+        C_frc, _ = self._get_prc_coefficients()  # (num_envs, 2)
+        foot_force = torch.norm(
+            self.contact_forces[:, self.feet_indices, :], dim=2
+        )  # (num_envs, 2) — 양 발 GRF norm
+        q_frc = 1.0 - torch.exp(-torch.square(foot_force) / 100.0)
+        return torch.sum(C_frc * q_frc, dim=1)  # 음수 반환 (config scale은 양수)
+
+    def _reward_foot_speed_stance(self):
+        """
+        [PRC] Stance phase 중 발의 선속도에 페널티 (slip 방지).
+
+        kernel: q_spd = 1 - exp(-2 * ||v||^2)   (논문 식)
+        C_spd는 stance phase에서 -1 (with smoothing), swing에서 0이므로
+        총 보상은 stance 중에만 음수.
+
+        Returns:
+            (num_envs,) — 발마다의 (C_spd * q_spd) 합. stance 중 발이 움직이면 음수.
+        """
+        _, C_spd = self._get_prc_coefficients()  # (num_envs, 2)
+        # rigid_state: [pos(3), quat(4), lin_vel(3), ang_vel(3)] → index 7:10 = linear velocity
+        foot_speed = torch.norm(
+            self.rigid_state[:, self.feet_indices, 7:10], dim=2
+        )  # (num_envs, 2)
+        q_spd = 1.0 - torch.exp(-2.0 * torch.square(foot_speed))
+        return torch.sum(C_spd * q_spd, dim=1)
+
+# ================================================================================== #
+# =============================== Rewards (기존) =================================== #
+# ================================================================================== #
+# 아래는 humanoid-gym 원본 보상함수들. config scales에서 0으로 설정하거나 주석 처리하면
+# 호출되지 않음. PRC 검증 후 필요한 항목만 다시 활성화할 것.
+# ================================================================================== #
+
     def _reward_joint_pos(self):
         """
         Calculates the reward based on the difference between the current joint positions and the target joint positions.
