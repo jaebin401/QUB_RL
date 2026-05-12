@@ -139,10 +139,10 @@
     <parent link="pelvis_link" />
     <child link="R_hip_r_link" />
     <axis
-      xyz="0 1 0" />
+      xyz="0 -1 0" />
     <limit
-      lower="-1.5708"
-      upper="0.5236"
+      lower="-0.5236"
+      upper="1.5708"
       effort="60"
       velocity="5.0" />
   </joint>
@@ -295,10 +295,10 @@
     <parent link="R_thigh_link" />
     <child link="R_calf_link" />
     <axis
-      xyz="0 -1 0" />
+      xyz="0 1 0" />
     <limit
-      lower="-1.9"
-      upper="0.0"
+      lower="0.0"
+      upper="1.9"
       effort="120"
       velocity="5.0" />
   </joint>
@@ -347,7 +347,7 @@
     <parent link="R_calf_link" />
     <child link="R_ankle_link" />
     <axis
-      xyz="0 -1 0" />
+      xyz="0 1 0" />
     <limit
       lower="-0.5236"
       upper="0.7854"
